@@ -1,0 +1,17 @@
+#springdoc:
+#  show-actuator: 'true'
+spring:
+  application:
+    name: template-spring-webflux
+  webflux:
+    base-path: /api
+  data:
+    mongodb:
+      authentication-database: admin
+      uri: mongodb://localhost:27017/spring-webflux
+      database: spring-webflux
+      password: mongopassword
+server:
+  port: 9000
+  http2:
+    enabled: true
