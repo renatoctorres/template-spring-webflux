@@ -4,8 +4,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 /**
  * JobHistory DTO
  */
@@ -14,8 +12,10 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class JobHistoryDTO {
     String id;
-    LocalDateTime startDate;
-    LocalDateTime endDate;
+    String startDate;
+    String endDate;
     String jobId;
     String departmentId;
+    String createdAt;
+    String updatedAt;
 }

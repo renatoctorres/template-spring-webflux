@@ -1,9 +1,10 @@
 package com.rct.humanresources.infra.handler;
 
-import com.rct.humanresources.core.mapper.CountryMapper;
 import com.rct.humanresources.core.model.dto.CountryDTO;
 import com.rct.humanresources.core.service.CountryService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.rct.humanresources.infra.config.exception.ResourceBadRequestException;
+import com.rct.humanresources.infra.config.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -14,29 +15,44 @@ import static java.time.Duration.ofSeconds;
 import static java.util.stream.Stream.generate;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.web.reactive.function.server.ServerResponse.notFound;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 import static reactor.core.publisher.Flux.fromStream;
-import static reactor.core.publisher.Flux.zip;
 import static reactor.core.publisher.Flux.interval;
+import static reactor.core.publisher.Flux.zip;
+import static reactor.core.publisher.Mono.error;
 
 /**
  * CountryHandler - WebFlux Handler
  */
 @Component
+@RequiredArgsConstructor
 public class CountryHandler {
-    CountryService service;
-    CountryMapper mapper;
+    private final CountryService service;
 
     /**
-     * Country Handler - Constructor
-     * @param service CountryService
-     * @param mapper CountryMapper
+     * Create Country
+     * @param request ServerRequest
+     * @return Mono ServerResponse
      */
-    @Autowired
-    public CountryHandler(CountryService service, CountryMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
+    public Mono<ServerResponse> create(ServerRequest request) {
+        return request.bodyToMono(CountryDTO.class)
+                .flatMap(country -> ServerResponse
+                        .status(CREATED)
+                        .contentType(APPLICATION_JSON)
+                        .body(service.create(country),CountryDTO.class))
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
+    }
+
+    /**
+     * Delete Country by ID
+     * @param request ServerRequest
+     * @return Mono ServerResponse
+     */
+    public Mono<ServerResponse> deleteById(ServerRequest request){
+        var id = request.pathVariable("id");
+        return service.deleteById(id)
+                .flatMap(countryDTO -> ok().body(countryDTO, CountryDTO.class))
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
@@ -49,6 +65,22 @@ public class CountryHandler {
                 .ok()
                 .contentType(APPLICATION_JSON)
                 .body(service.findAll(), CountryDTO.class);
+    }
+
+    /**
+     * Find Country by ID
+     * @param request ServerRequest
+     * @return Mono ServerResponse
+     */
+    public Mono<ServerResponse> findById(ServerRequest request) {
+        var id = request.pathVariable("id");
+        return service
+                .findById(id)
+                .flatMap(countryDTO -> ok()
+                        .contentType(APPLICATION_JSON)
+                        .body(countryDTO, CountryDTO.class)
+                )
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
@@ -81,36 +113,8 @@ public class CountryHandler {
                                                 fromStream(generate(() -> item)))
                                                 .map(Tuple2::getT2)
                                         ), CountryDTO.class))
-                .orElseGet(() -> ServerResponse.notFound().build());
+                .orElseGet(() -> error(new ResourceNotFoundException()));
 
-    }
-
-    /**
-     * Find Country by ID
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> findById(ServerRequest request) {
-        return service
-                .findById(Long.valueOf(request.pathVariable("id")))
-                .flatMap(countryDTO -> ok()
-                        .contentType(APPLICATION_JSON)
-                        .body(countryDTO, CountryDTO.class)
-                )
-                .switchIfEmpty(notFound().build());
-    }
-
-    /**
-     * Create Country
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> create(ServerRequest request) {
-        return request.bodyToMono(CountryDTO.class)
-                .flatMap(country -> ServerResponse
-                        .status(CREATED)
-                        .contentType(APPLICATION_JSON)
-                        .body(service.create(country),CountryDTO.class));
     }
 
     /**
@@ -122,18 +126,9 @@ public class CountryHandler {
         return request.bodyToMono(CountryDTO.class)
                 .flatMap(country -> ok()
                         .contentType(APPLICATION_JSON)
-                        .body(service.update(Long.valueOf(request.pathVariable("id")), country), CountryDTO.class)
-                );
+                        .body(service.updateById(request.pathVariable("id"), country), CountryDTO.class)
+                )
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
     }
 
-    /**
-     * Delete Country by ID
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> deleteById(ServerRequest request){
-        return service.deleteById(Long.valueOf(request.pathVariable("id")))
-                .flatMap(countryDTO -> ok().body(countryDTO, CountryDTO.class))
-                .switchIfEmpty(notFound().build());
-    }
 }

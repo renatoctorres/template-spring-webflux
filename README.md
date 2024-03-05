@@ -1,5 +1,8 @@
 # Spring Boot - WebFlux Template - Human Resources Process Application
 
+![Java](http://ForTheBadge.com/images/badges/made-with-java.svg)
+![Docker](https://forthebadge.com/images/badges/docker-container.svg)
+
 This is an example of a process application containing a hiring process designed in a reactive model, 
 exemplified with the use of APIs or Data Stream (Event-Driven)
 Clean Code and Clean Architecture concepts, a test suite using JUnit, Mockito and Jacoco.
@@ -7,7 +10,7 @@ APIs documented in OpenAPI3, build and libraries managed by Maven and code quali
 
 ## Features
 
-- CRUD APIs for Department and Employer;
+- CRUD APIs for Department and Employee;
 - Unit Tests and Integration Tests integrated;
 - Documentation API in Swagger with Open API 3;
 - Clean Code and Clean Architecture;
@@ -42,22 +45,29 @@ spring.data.mongodb.uri = mongodb://localhost:27017/spring-webflux
 
 ```
 ./gradlew bootRun
-
 ```
-The application exposes an APIs on port 8080 with these URLs:
-http://localhost:8080
 
-Swagger documentation is available on this endpoint:
-http://localhost:8080/swagger-ui/index.html
+- The application exposes an APIs on port 8080 with these URLs:
+    http://localhost:8080
 
-Open API Specification is available on this endpoint:
-http://localhost:8080/v3/api-docs
+- The Mongo Express is available on this endpoint:
+    http://localhost:8081/
+
+- Swagger documentation is available on this endpoint:
+    http://localhost:8080/swagger-ui.html
+
+- Open API Specification is available on this endpoint:
+    http://localhost:8080/v3/api-docs
+
 
 ## Stacks
-![image](https://img.shields.io/badge/Spring-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
-![image](https://img.shields.io/badge/Kotlin-B125EA&style=for-the-badge&logo=kotlin&logoColor=white)
-![image](https://img.shields.io/badge/gradle-02303A?style=for-the-badge&logo=gradle&logoColor=white)
-![image](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)
-![image](https://img.shields.io/badge/Elastic_Search-005571?style=for-the-badge&logo=elasticsearch&logoColor=white)
-![image](https://img.shields.io/badge/Kibana-005571?style=for-the-badge&logo=Kibana&logoColor=white)
-![image](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=Swagger&logoColor=white)  
+<p style= "text-align: left;">
+     <img src="https://skillicons.dev/icons?i=java" width="48" height="48" alt="Java" /> 
+     <img src="https://skillicons.dev/icons?i=spring" width="48" height="48" alt="Spring" /> 
+     <img src="https://skillicons.dev/icons?i=hibernate" width="48" height="48" alt="Hibernate" /> 
+     <img src="https://skillicons.dev/icons?i=gradle" width="48" height="48" alt="Gradle" /> 
+     <img src="https://skillicons.dev/icons?i=docker" width="48" height="48" alt="Docker" /> 
+     <img src="https://skillicons.dev/icons?i=mongo" width="48" height="48" alt="MongoDB" /> 
+     <img src="https://skillicons.dev/icons?i=git" width="48" height="48" alt="Git" /> 
+</p>
+  

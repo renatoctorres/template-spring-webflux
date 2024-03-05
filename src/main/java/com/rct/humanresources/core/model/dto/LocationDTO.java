@@ -15,4 +15,6 @@ public class LocationDTO {
     String street;
     String postalCode;
     String cityId;
+    String createdAt;
+    String updatedAt;
 }

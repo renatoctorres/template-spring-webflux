@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository;
  * Country Repository - ReactiveMongoDBRepository Implementation
  */
 @Repository
-public interface CountryRepository extends ReactiveMongoRepository<Country, Long> {
+public interface CountryRepository extends ReactiveMongoRepository<Country, String> {
 }

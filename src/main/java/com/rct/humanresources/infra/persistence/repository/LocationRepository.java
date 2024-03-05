@@ -7,6 +7,6 @@ import reactor.core.publisher.Flux;
 /**
  * Location Repository - ReactiveMongoDBRepository Implementation
  */
-public interface LocationRepository  extends ReactiveMongoRepository<Location, Long> {
-    Flux<Location> findByCityId(Long cityId);
+public interface LocationRepository  extends ReactiveMongoRepository<Location, String> {
+    Flux<Location> findByCityId(String cityId);
 }

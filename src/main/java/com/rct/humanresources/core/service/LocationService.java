@@ -6,10 +6,10 @@ import reactor.core.publisher.Mono;
 
 public interface LocationService {
     Flux<LocationDTO> findAll();
-    Flux<LocationDTO> findByCityId(Long cityId);
-    Mono<LocationDTO> findById(Long id);
-    Mono<LocationDTO> update(Long id, LocationDTO dto);
-    Mono<LocationDTO> deleteById(Long id);
+    Flux<LocationDTO> findByCityId(String cityId);
+    Mono<LocationDTO> findById(String id);
+    Mono<LocationDTO> updateById(String id, LocationDTO dto);
+    Mono<LocationDTO> deleteById(String id);
     Flux<LocationDTO> fetchByName(String name);
     Mono<LocationDTO> create(LocationDTO dto);
 }

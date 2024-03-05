@@ -9,18 +9,18 @@ import reactor.core.publisher.Flux;
  * JobHistory Repository - ReactiveMongoDBRepository Implementation
  */
 @Repository
-public interface JobHistoryRepository extends ReactiveMongoRepository<JobHistory, Long> {
+public interface JobHistoryRepository extends ReactiveMongoRepository<JobHistory, String> {
     /**
      * Find JobHistory by Job ID
-     * @param jobId Long
+     * @param jobId String
      * @return Flux JobHistory
      */
-    Flux<JobHistory> findByJobId(Long jobId);
+    Flux<JobHistory> findByJobId(String jobId);
 
     /**
-     * Find JobHistory by Employer ID
-     * @param departmentId Long
+     * Find JobHistory by Employee ID
+     * @param departmentId String
      * @return Flux JobHistory
      */
-    Flux<JobHistory> findByDepartmentId(Long departmentId);
+    Flux<JobHistory> findByDepartmentId(String departmentId);
 }

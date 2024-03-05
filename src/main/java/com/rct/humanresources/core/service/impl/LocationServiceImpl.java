@@ -1,47 +1,34 @@
 package com.rct.humanresources.core.service.impl;
 
 import com.rct.humanresources.core.model.dto.LocationDTO;
-import com.rct.humanresources.core.mapper.LocationMapper;
+import com.rct.humanresources.core.model.mapper.LocationMapper;
 import com.rct.humanresources.core.service.LocationService;
 import com.rct.humanresources.infra.persistence.model.Location;
 import com.rct.humanresources.infra.persistence.repository.LocationRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static java.util.Collections.singletonList;
 import static org.springframework.data.domain.Sort.Order.asc;
+import static reactor.core.publisher.Mono.empty;
 
 /**
  * Location Service Implementation
  */
 @Service
 @Slf4j
-@Transactional
+@RequiredArgsConstructor
 public class LocationServiceImpl implements LocationService {
-    LocationMapper mapper;
-    LocationRepository repository;
-    ReactiveMongoTemplate reactiveMongoTemplate;
-    
-    /**
-     * Location Service Implementation - Constructor
-     * @param reactiveMongoTemplate ReactiveMongoTemplate
-     * @param repository LocationRepository
-     */
-    @Autowired
-    public LocationServiceImpl(LocationMapper mapper, LocationRepository repository, 
-                               ReactiveMongoTemplate reactiveMongoTemplate ) {
-        this.mapper = mapper;
-        this.reactiveMongoTemplate = reactiveMongoTemplate;
-        this.repository = repository;
-    }
+    private final LocationMapper mapper;
+    private final LocationRepository repository;
+    private final ReactiveMongoTemplate reactiveMongoTemplate;
 
     /**
      * Create Location
@@ -66,10 +53,10 @@ public class LocationServiceImpl implements LocationService {
 
     /**
      * Find Location by ID
-     * @param id Long
+     * @param id String
      * @return Mono LocationDTO
      */
-    public Mono<LocationDTO> findById(Long id){
+    public Mono<LocationDTO> findById(String id){
         return repository
                 .findById(id)
                 .map(mapper::fromModel);
@@ -77,10 +64,10 @@ public class LocationServiceImpl implements LocationService {
 
     /**
      * Find All Locations by City ID
-     * @param cityId Long
+     * @param cityId String
      * @return Flux LocationDTO
      */
-    public Flux<LocationDTO> findByCityId(Long cityId){
+    public Flux<LocationDTO> findByCityId(String cityId){
         return repository
                 .findByCityId(cityId)
                 .map(mapper::fromModel);
@@ -89,22 +76,26 @@ public class LocationServiceImpl implements LocationService {
 
     /**
      * Update Location by ID
-     * @param id Long
+     * @param id String
      * @param dto LocationDTO
      * @return Mono LocationDTO
      */
-    public Mono<LocationDTO> update(Long id, LocationDTO dto){
+    public Mono<LocationDTO> updateById(String id, LocationDTO dto){
         return repository
-                .save(mapper.fromDTO(dto))
+                .findById(id)
+                .flatMap(item ->
+                        repository.save(mapper.fromDTO(dto))
+                )
+                .switchIfEmpty(empty())
                 .map(mapper::fromModel);
     }
 
     /**
      * Delete Location by ID
-     * @param id Long
+     * @param id String
      * @return Mono LocationDTO
      */
-    public Mono<LocationDTO> deleteById(Long id){
+    public Mono<LocationDTO> deleteById(String id){
         return repository
                 .findById(id)
                 .flatMap(item -> repository.delete(item).then(Mono.just(item)))

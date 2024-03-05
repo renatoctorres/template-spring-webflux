@@ -6,10 +6,10 @@ import reactor.core.publisher.Mono;
 
 public interface StateService {
     Flux<StateDTO> findAll();
-    Flux<StateDTO> findByCountryId(Long countryId);
-    Mono<StateDTO> findById(Long id);
-    Mono<StateDTO> update(Long id, StateDTO dto);
-    Mono<StateDTO> deleteById(Long id);
+    Flux<StateDTO> findByCountryId(String countryId);
+    Mono<StateDTO> findById(String id);
+    Mono<StateDTO> updateById(String id, StateDTO dto);
+    Mono<StateDTO> deleteById(String id);
     Flux<StateDTO> fetchByName(String name);
     Mono<StateDTO> create(StateDTO dto);
 }

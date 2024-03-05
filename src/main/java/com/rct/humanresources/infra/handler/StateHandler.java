@@ -1,9 +1,10 @@
 package com.rct.humanresources.infra.handler;
 
 import com.rct.humanresources.core.model.dto.StateDTO;
-import com.rct.humanresources.core.mapper.StateMapper;
 import com.rct.humanresources.core.service.StateService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.rct.humanresources.infra.config.exception.ResourceBadRequestException;
+import com.rct.humanresources.infra.config.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -14,34 +15,55 @@ import static java.time.Duration.ofSeconds;
 import static java.util.stream.Stream.generate;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.web.reactive.function.server.ServerResponse.notFound;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 import static reactor.core.publisher.Flux.fromStream;
-import static reactor.core.publisher.Flux.zip;
 import static reactor.core.publisher.Flux.interval;
+import static reactor.core.publisher.Flux.zip;
+import static reactor.core.publisher.Mono.error;
 
 /**
  * StateHandler - WebFlux Handler
  */
 @Component
+@RequiredArgsConstructor
 public class StateHandler {
-    StateService service;
-    StateMapper mapper;
+    private final StateService service;
 
     /**
-     * State Handler - Constructor
-     * @param service DepartmentService
-     * @param mapper DepartmentMapper
+     * Create State
+     *
+     * @param request ServerRequest
+     *
+     * @return Mono ServerResponse
      */
-    @Autowired
-    public StateHandler(StateService service, StateMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
+    public Mono<ServerResponse> create(ServerRequest request) {
+        return request.bodyToMono(StateDTO.class)
+                .flatMap(state -> ServerResponse
+                        .status(CREATED)
+                        .contentType(APPLICATION_JSON)
+                        .body(service.create(state), StateDTO.class))
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
+    }
+
+    /**
+     * Delete State by ID
+     *
+     * @param request ServerRequest
+     *
+     * @return Mono ServerResponse
+     */
+    public Mono<ServerResponse> deleteById(ServerRequest request) {
+        var id = request.pathVariable("id");
+        return service.deleteById(id)
+                .flatMap(stateDTO -> ok().body(stateDTO, StateDTO.class))
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
      * Find All Locations
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findAll(ServerRequest request) {
@@ -53,34 +75,43 @@ public class StateHandler {
 
     /**
      * Find States by Country ID
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findByCountryId(ServerRequest request) {
+        var countryId = request.pathVariable("countryId");
         return ServerResponse
                 .ok()
                 .contentType(APPLICATION_JSON)
-                .body(service.findByCountryId(Long.valueOf(request.pathVariable("countryId"))), StateDTO.class);
+                .body(service.findByCountryId(countryId), StateDTO.class)
+                .onErrorResume(e -> error(new ResourceNotFoundException(countryId)));
     }
 
     /**
      * Find State by  ID
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findById(ServerRequest request) {
+        var id = request.pathVariable("countryId");
         return service
-                .findById(Long.valueOf(request.pathVariable("id")))
+                .findById(id)
                 .flatMap(stateDTO -> ok()
                         .contentType(APPLICATION_JSON)
                         .body(stateDTO, StateDTO.class)
                 )
-                .switchIfEmpty(notFound().build());
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
      * Search State by Name
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> search(ServerRequest request) {
@@ -88,13 +119,15 @@ public class StateHandler {
                 .map(name -> ServerResponse
                         .ok()
                         .contentType(APPLICATION_JSON)
-                        .body(service.fetchByName(name), StateDTO.class)).orElseGet(() -> ServerResponse
-                        .notFound().build());
-
+                        .body(service.fetchByName(name), StateDTO.class))
+                .orElseGet(() -> error(new ResourceNotFoundException()));
     }
+
     /**
      * Stream All States
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> stream(ServerRequest request) {
@@ -109,40 +142,19 @@ public class StateHandler {
     }
 
     /**
-     * Create State
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> create(ServerRequest request) {
-        return request.bodyToMono(StateDTO.class)
-                .flatMap(state -> ServerResponse
-                        .status(CREATED)
-                        .contentType(APPLICATION_JSON)
-                        .body(service.create(state), StateDTO.class));
-    }
-
-    /**
      * Update State by ID
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> updateById(ServerRequest request) {
         return request.bodyToMono(StateDTO.class)
                 .flatMap(state -> ok()
                         .contentType(APPLICATION_JSON)
-                        .body(service.update(Long.valueOf(request.pathVariable("id")), state),
+                        .body(service.updateById(request.pathVariable("id"), state),
                                 StateDTO.class)
                 );
     }
 
-    /**
-     * Delete State by ID
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> deleteById(ServerRequest request){
-        return service.deleteById(Long.valueOf(request.pathVariable("id")))
-                .flatMap(stateDTO -> ok().body(stateDTO, StateDTO.class))
-                .switchIfEmpty(notFound().build());
-    }
 }

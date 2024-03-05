@@ -13,4 +13,6 @@ import lombok.Setter;
 public class CountryDTO {
     String id;
     String name;
+    String createdAt;
+    String updatedAt;
 }

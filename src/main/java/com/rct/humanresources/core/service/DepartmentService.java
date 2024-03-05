@@ -10,10 +10,10 @@ import reactor.core.publisher.Mono;
 public interface DepartmentService {
     Mono<DepartmentDTO> create(DepartmentDTO dto);
     Flux<DepartmentDTO> findAll();
-    Flux<DepartmentDTO> findByManagerId(Long managerId);
-    Flux<DepartmentDTO> findByLocationId(Long locationId);
-    Mono<DepartmentDTO> findById(Long id);
-    Mono<DepartmentDTO> update(Long id, DepartmentDTO dto);
-    Mono<DepartmentDTO> deleteById(Long id);
+    Flux<DepartmentDTO> findByManagerId(String managerId);
+    Flux<DepartmentDTO> findByLocationId(String locationId);
+    Mono<DepartmentDTO> findById(String id);
+    Mono<DepartmentDTO> updateById(String id, DepartmentDTO dto);
+    Mono<DepartmentDTO> deleteById(String id);
     Flux<DepartmentDTO> fetchByName(String name);
 }

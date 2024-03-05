@@ -1,47 +1,34 @@
 package com.rct.humanresources.core.service.impl;
 
-import com.rct.humanresources.core.mapper.StateMapper;
 import com.rct.humanresources.core.model.dto.StateDTO;
+import com.rct.humanresources.core.model.mapper.StateMapper;
 import com.rct.humanresources.core.service.StateService;
 import com.rct.humanresources.infra.persistence.model.State;
 import com.rct.humanresources.infra.persistence.repository.StateRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static java.util.Collections.singletonList;
 import static org.springframework.data.domain.Sort.Order.asc;
+import static reactor.core.publisher.Mono.empty;
 
 /**
  * State Service Implementation
  */
 @Service
 @Slf4j
-@Transactional
+@RequiredArgsConstructor
 public class StateServiceImpl implements StateService {
-    ReactiveMongoTemplate reactiveMongoTemplate;
-    StateMapper mapper;
-    StateRepository repository;
-
-    /**
-     * State Service Implementation - Constructor
-     * @param reactiveMongoTemplate ReactiveMongoTemplate
-     * @param repository StateRepository
-     */
-    @Autowired
-    public StateServiceImpl(ReactiveMongoTemplate reactiveMongoTemplate, StateMapper mapper,
-                            StateRepository repository) {
-        this.mapper = mapper;
-        this.reactiveMongoTemplate = reactiveMongoTemplate;
-        this.repository = repository;
-    }
+    private final ReactiveMongoTemplate reactiveMongoTemplate;
+    private final StateMapper mapper;
+    private final StateRepository repository;
 
     /**
      * Create State
@@ -66,10 +53,10 @@ public class StateServiceImpl implements StateService {
 
     /**
      * Find State by ID
-     * @param id Long
+     * @param id String
      * @return Mono StateDTO
      */
-    public Mono<StateDTO> findById(Long id){
+    public Mono<StateDTO> findById(String id){
         return repository
                 .findById(id)
                 .map(mapper::fromModel);
@@ -77,10 +64,10 @@ public class StateServiceImpl implements StateService {
 
     /**
      * Find All States by Department ID
-     * @param countryId Long
+     * @param countryId String
      * @return Flux StateDTO
      */
-    public Flux<StateDTO> findByCountryId(Long countryId){
+    public Flux<StateDTO> findByCountryId(String countryId){
         return repository
                 .findByCountryId(countryId)
                 .map(mapper::fromModel);
@@ -89,22 +76,26 @@ public class StateServiceImpl implements StateService {
 
     /**
      * Update State by ID
-     * @param id Long
+     * @param id String
      * @param dto StateDTO
      * @return Mono StateDTO
      */
-    public Mono<StateDTO> update(Long id, StateDTO dto){
+    public Mono<StateDTO> updateById(String id, StateDTO dto){
         return repository
-                .save(mapper.fromDTO(dto))
+                .findById(id)
+                .flatMap(item ->
+                        repository.save(mapper.fromDTO(dto))
+                )
+                .switchIfEmpty(empty())
                 .map(mapper::fromModel);
     }
 
     /**
      * Delete State by ID
-     * @param id Long
+     * @param id String
      * @return Mono StateDTO
      */
-    public Mono<StateDTO> deleteById(Long id){
+    public Mono<StateDTO> deleteById(String id){
         return repository.findById(id)
                 .flatMap(item -> repository.delete(item).then(Mono.just(item)))
                 .map(mapper::fromModel);

@@ -15,4 +15,6 @@ public class StateDTO {
     String name;
     String acronym;
     String countryId;
+    String createdAt;
+    String updatedAt;
 }

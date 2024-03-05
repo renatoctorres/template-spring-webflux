@@ -6,11 +6,10 @@ import reactor.core.publisher.Mono;
 
 public interface JobHistoryService {
     Flux<JobHistoryDTO> findAll();
-    Mono<JobHistoryDTO> findById(Long id);
-    Flux<JobHistoryDTO> findByDepartmentId(Long departmentId);
-    Flux<JobHistoryDTO> findByJobId(Long jobId);
-    Mono<JobHistoryDTO> update(Long id, JobHistoryDTO dto);
-    Mono<JobHistoryDTO> deleteById(Long id);
-    Flux<JobHistoryDTO> fetchByName(String name);
+    Mono<JobHistoryDTO> findById(String id);
+    Flux<JobHistoryDTO> findByDepartmentId(String departmentId);
+    Flux<JobHistoryDTO> findByJobId(String jobId);
+    Mono<JobHistoryDTO> updateById(String id, JobHistoryDTO dto);
+    Mono<JobHistoryDTO> deleteById(String id);
     Mono<JobHistoryDTO> create(JobHistoryDTO dto);
 }

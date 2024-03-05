@@ -14,4 +14,8 @@ public class DepartmentDTO {
     String id;
     String name;
     String description;
+    String locationId;
+    String managerId;
+    String createdAt;
+    String updatedAt;
 }

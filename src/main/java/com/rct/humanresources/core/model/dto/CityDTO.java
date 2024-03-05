@@ -14,4 +14,6 @@ public class CityDTO {
     String id;
     String name;
     String stateId;
+    String createdAt;
+    String updatedAt;
 }

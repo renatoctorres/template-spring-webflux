@@ -2,6 +2,9 @@ package com.rct.humanresources.infra.delivery;
 
 import com.rct.humanresources.core.model.dto.DepartmentDTO;
 import com.rct.humanresources.core.service.DepartmentService;
+import com.rct.humanresources.infra.config.exception.ResourceBadRequestException;
+import com.rct.humanresources.infra.config.exception.ResourceNotFoundException;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,153 +17,183 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
+
+import java.util.List;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.stream.Stream.generate;
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
-import static org.springframework.http.ResponseEntity.badRequest;
-import static org.springframework.http.ResponseEntity.notFound;
 import static org.springframework.http.ResponseEntity.ok;
-import static reactor.core.publisher.Flux.zip;
-import static reactor.core.publisher.Flux.interval;
+import static org.springframework.http.ResponseEntity.status;
 import static reactor.core.publisher.Flux.fromStream;
+import static reactor.core.publisher.Flux.interval;
+import static reactor.core.publisher.Flux.zip;
+import static reactor.core.publisher.Mono.error;
 
 
 /**
- * Department Resource
+ * Department Rest Controller - API Rest
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/departments")
+@RequestMapping("/api/departments")
 public class DepartmentResource {
-    DepartmentService service;
+    private final DepartmentService service;
 
     /**
      * Create Department
      * POST - Http Method
+     *
      * @param dto DepartmentDTO
-     * @return Mono Department
+     *
+     * @return Mono<ResponseEntity < DepartmentDTO>>
      */
     @PostMapping
     @ResponseStatus(CREATED)
-    public Mono<ResponseEntity<DepartmentDTO>> create(@RequestBody DepartmentDTO dto){
+    @Operation(description = "Save Department in DB, by DepartmentDTO Request", summary = "Create Department")
+    public Mono<ResponseEntity<DepartmentDTO>> create(@RequestBody DepartmentDTO dto) {
         return service
                 .create(dto)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(notFound().build());
+                .map(item -> status(CREATED).body(item))
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
     }
 
     /**
      * Find All Departments
      * GET - Http Method
-     * @return Flux Department
+     *
+     * @return Mono<ResponseEntity < List < DepartmentDTO>>>
      */
     @GetMapping
-    public Flux<ResponseEntity<DepartmentDTO>> findAll(){
+    @Operation(description = "Find All Departments registered", summary = "Find All Departments")
+    public Mono<ResponseEntity<List<DepartmentDTO>>> findAll() {
         return service.findAll()
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(notFound().build());
+                .collectList()
+                .map(list -> new ResponseEntity<>(list, OK));
     }
 
 
     /**
      * Find All Departments by Manager ID
      * GET - Http Method
-     * @param managerId Long
-     * @return Flux Response Entity DepartmentDTO
+     *
+     * @param managerId String
+     *
+     * @return Mono<ResponseEntity < List < DepartmentDTO>>>
      */
     @GetMapping("/managers/{managerId}")
-    public Flux<ResponseEntity<DepartmentDTO>> findByManagerId(@PathVariable Long managerId){
+    @Operation(description = "Find All Departments by Manager ID", summary = "Find Department by Manager")
+    public Mono<ResponseEntity<List<DepartmentDTO>>> findByManagerId(@PathVariable String managerId) {
         return service.findByManagerId(managerId)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(notFound().build());
+                .collectList()
+                .map(list -> new ResponseEntity<>(list, OK))
+                .switchIfEmpty(error(new ResourceNotFoundException(managerId)));
     }
 
     /**
      * Find All Departments by Location ID
-     * @param locationId Long
-     * @return Flux Response Entity DepartmentDTO
+     *
+     * @param locationId String
+     *
+     * @return Mono<ResponseEntity < List < DepartmentDTO>>>
      */
     @GetMapping("/locations/{locationId}")
-    public Flux<ResponseEntity<DepartmentDTO>> findByLocationId(@PathVariable Long locationId){
+    @Operation(description = "Find All Departments by Location ID", summary = "Find Department by Location")
+    public Mono<ResponseEntity<List<DepartmentDTO>>> findByLocationId(@PathVariable String locationId) {
         return service.findByLocationId(locationId)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(notFound().build());
+                .collectList()
+                .map(list -> new ResponseEntity<>(list, OK))
+                .switchIfEmpty(error(new ResourceNotFoundException(locationId)));
     }
 
 
     /**
      * Find All Departments by ID
      * GET - Http Method
-     * @param id Long
-     * @return Mono ResponseEntity
+     *
+     * @param id String
+     *
+     * @return Mono<ResponseEntity < DepartmentDTO>>
      */
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<DepartmentDTO>> findById(@PathVariable Long id){
+    @Operation(description = "Find Department by ID", summary = "Find Department")
+    public Mono<ResponseEntity<DepartmentDTO>> findById(@PathVariable String id) {
         return service.findById(id)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(notFound().build());
+                .switchIfEmpty(error(new ResourceNotFoundException(id)));
     }
 
     /**
      * Update Department by ID
      * PUT - Http Method
-     * @param id Long
+     *
+     * @param id  String
      * @param dto DepartmentDTO
-     * @return Mono ResponseEntity
+     *
+     * @return Mono<ResponseEntity < DepartmentDTO>>
      */
     @PutMapping("/{id}")
-    public Mono<ResponseEntity<DepartmentDTO>> updateById(@PathVariable Long id, @RequestBody DepartmentDTO dto){
-        return service.update(id,dto)
+    @Operation(description = "Update Department by ID", summary = "Update Department")
+    public Mono<ResponseEntity<DepartmentDTO>> updateById(@PathVariable String id, @RequestBody DepartmentDTO dto) {
+        return service.updateById(id, dto)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(badRequest().build());
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
     }
 
     /**
      * Delete Department by ID
      * DELETE - Http Method
-     * @param id Long
-     * @return Mono ResponseEntity
+     *
+     * @param id String
+     *
+     * @return Mono<ResponseEntity < DepartmentDTO>>
      */
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Void>> deleteById(@PathVariable Long id){
+    @Operation(description = "Delete Department by ID", summary = "Delete Department")
+    public Mono<ResponseEntity<Void>> deleteById(@PathVariable String id) {
         return service.deleteById(id)
-                .map( r -> ok().<Void>build())
-                .defaultIfEmpty(notFound().build());
+                .map(r -> ok().<Void>build())
+                .switchIfEmpty(error(new ResourceNotFoundException(id)));
     }
 
     /**
      * Find All Departments by Name
      * GET - Http Method
+     *
      * @param name String
-     * @return Flux ResponseEntity
+     *
+     * @return Mono<ResponseEntity < List < DepartmentDTO>>>
      */
     @GetMapping("/search")
-    public Flux<ResponseEntity<DepartmentDTO>> search(@RequestParam("name") String name) {
+    @Operation(description = "Search Departments by Name", summary = "Search Departments")
+    public Mono<ResponseEntity<List<DepartmentDTO>>> search(@RequestParam("name") String name) {
         return service.fetchByName(name)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(notFound().build());
+                .collectList()
+                .map(list -> new ResponseEntity<>(list, OK))
+                .switchIfEmpty(error(new ResourceNotFoundException(name)));
     }
 
     /**
      * Stream All Departments
      * GET - Http Method
-     * @return Flux ResponseEntity
+     *
+     * @return Mono<ResponseEntity < List < DepartmentDTO>>>
      */
     @GetMapping(value = "/stream", produces = TEXT_EVENT_STREAM_VALUE)
-    public Flux<ResponseEntity<DepartmentDTO>> stream() {
+    @Operation(description = "Stream All Departments", summary = "Stream Departments")
+    public Mono<ResponseEntity<List<DepartmentDTO>>> stream() {
         return service
                 .findAll()
                 .flatMap(department -> zip(interval(ofSeconds(2)),
                                 fromStream(generate(() -> department))
                         )
-                        .map(Tuple2::getT2)
+                                .map(Tuple2::getT2)
                 )
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(notFound().build());
+                .collectList()
+                .map(list -> new ResponseEntity<>(list, OK));
     }
 }

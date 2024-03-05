@@ -1,17 +1,29 @@
-#springdoc:
-#  show-actuator: 'true'
+springdoc:
+  show-actuator: true
+  api-docs:
+    groups:
+      enabled: true
+    version: openapi_3_1
+  swagger-ui:
+    use-root-path: true
 spring:
   application:
     name: template-spring-webflux
-  webflux:
-    base-path: /api
   data:
     mongodb:
-      authentication-database: admin
-      uri: mongodb://localhost:27017/spring-webflux
-      database: spring-webflux
-      password: mongopassword
+      authentication-database: root
+      uri: mongodb://admin:password@localhost:27017/spring-webflux?authSource=admin
+      password: password
+      username: admin
 server:
-  port: 9000
+  port: 8080
   http2:
     enabled: true
+logging:
+  level:
+    root: info
+    org:
+      springframework:
+        boot:
+          autoconfigure:
+            logging: info

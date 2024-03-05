@@ -1,47 +1,34 @@
 package com.rct.humanresources.core.service.impl;
 
-import com.rct.humanresources.core.mapper.CountryMapper;
 import com.rct.humanresources.core.model.dto.CountryDTO;
+import com.rct.humanresources.core.model.mapper.CountryMapper;
 import com.rct.humanresources.core.service.CountryService;
 import com.rct.humanresources.infra.persistence.model.Country;
 import com.rct.humanresources.infra.persistence.repository.CountryRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static java.util.Collections.singletonList;
 import static org.springframework.data.domain.Sort.Order.asc;
+import static reactor.core.publisher.Mono.empty;
 
 /**
  * Country Service Implementation
  */
 @Service
 @Slf4j
-@Transactional
+@RequiredArgsConstructor
 public class CountryServiceImpl implements CountryService {
-    ReactiveMongoTemplate reactiveMongoTemplate;
-    CountryMapper mapper;
-    CountryRepository repository;
-
-    /**
-     * Country Service Implementation - Constructor
-     * @param reactiveMongoTemplate ReactiveMongoTemplate
-     * @param repository CountryRepository
-     */
-    @Autowired
-    public CountryServiceImpl(ReactiveMongoTemplate reactiveMongoTemplate, CountryMapper mapper,
-                              CountryRepository repository) {
-        this.reactiveMongoTemplate = reactiveMongoTemplate;
-        this.mapper = mapper;
-        this.repository = repository;
-    }
+    private final ReactiveMongoTemplate reactiveMongoTemplate;
+    private final CountryMapper mapper;
+    private final CountryRepository repository;
 
     /**
      * Create Country
@@ -66,10 +53,10 @@ public class CountryServiceImpl implements CountryService {
 
     /**
      * Find Country by ID
-     * @param id Long
+     * @param id String
      * @return Mono CountryDTO
      */
-    public Mono<CountryDTO> findById(Long id){
+    public Mono<CountryDTO> findById(String id){
         return repository
                 .findById(id)
                 .map(mapper::fromModel);
@@ -77,22 +64,26 @@ public class CountryServiceImpl implements CountryService {
 
     /**
      * Update Country by ID
-     * @param id Long
+     * @param id String
      * @param dto CountryDTO
      * @return Mono CountryDTO
      */
-    public Mono<CountryDTO> update(Long id, CountryDTO dto){
+    public Mono<CountryDTO> updateById(String id, CountryDTO dto){
         return repository
-                .save(mapper.fromDTO(dto))
+                .findById(id)
+                .flatMap(item ->
+                        repository.save(mapper.fromDTO(dto))
+                )
+                .switchIfEmpty(empty())
                 .map(mapper::fromModel);
     }
 
     /**
      * Delete Country by ID
-     * @param id Long
+     * @param id String
      * @return Mono CountryDTO
      */
-    public Mono<CountryDTO> deleteById(Long id){
+    public Mono<CountryDTO> deleteById(String id){
         return repository
                 .findById(id)
                 .flatMap(item -> repository.delete(item).then(Mono.just(item)))

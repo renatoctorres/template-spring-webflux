@@ -6,9 +6,9 @@ import reactor.core.publisher.Mono;
 
 public interface CountryService {
     Flux<CountryDTO>findAll();
-    Mono<CountryDTO>findById(Long id);
-    Mono<CountryDTO>update(Long id, CountryDTO dto);
-    Mono<CountryDTO>deleteById(Long id);
+    Mono<CountryDTO>findById(String id);
+    Mono<CountryDTO> updateById(String id, CountryDTO dto);
+    Mono<CountryDTO>deleteById(String id);
     Flux<CountryDTO>fetchByName(String name);
     Mono<CountryDTO>create(CountryDTO dto);
 }

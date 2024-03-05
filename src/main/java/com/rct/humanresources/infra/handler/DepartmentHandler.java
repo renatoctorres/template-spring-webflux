@@ -1,9 +1,10 @@
 package com.rct.humanresources.infra.handler;
 
 import com.rct.humanresources.core.model.dto.DepartmentDTO;
-import com.rct.humanresources.core.mapper.DepartmentMapper;
 import com.rct.humanresources.core.service.DepartmentService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.rct.humanresources.infra.config.exception.ResourceBadRequestException;
+import com.rct.humanresources.infra.config.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -14,34 +15,56 @@ import static java.time.Duration.ofSeconds;
 import static java.util.stream.Stream.generate;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.web.reactive.function.server.ServerResponse.notFound;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 import static reactor.core.publisher.Flux.fromStream;
-import static reactor.core.publisher.Flux.zip;
 import static reactor.core.publisher.Flux.interval;
+import static reactor.core.publisher.Flux.zip;
+import static reactor.core.publisher.Mono.error;
 
 /**
  * DepartmentHandler - WebFlux Handler
  */
 @Component
+@RequiredArgsConstructor
 public class DepartmentHandler {
-    DepartmentService service;
-    DepartmentMapper mapper;
+    private final DepartmentService service;
 
     /**
-     * Department Handler - Constructor
-     * @param service DepartmentService
-     * @param mapper DepartmentMapper
+     * Create Department
+     *
+     * @param request ServerRequest
+     *
+     * @return Mono ServerResponse
      */
-    @Autowired
-    public DepartmentHandler(DepartmentService service, DepartmentMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
+    public Mono<ServerResponse> create(ServerRequest request) {
+        return request
+                .bodyToMono(DepartmentDTO.class)
+                .flatMap(department -> ServerResponse
+                        .status(CREATED)
+                        .contentType(APPLICATION_JSON)
+                        .body(service.create(department), DepartmentDTO.class))
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
+    }
+
+    /**
+     * Delete Department by ID
+     *
+     * @param request ServerRequest
+     *
+     * @return Mono ServerResponse
+     */
+    public Mono<ServerResponse> deleteById(ServerRequest request) {
+        var id = request.pathVariable("id");
+        return service.deleteById(id)
+                .flatMap(departmentDTO -> ok().body(departmentDTO, DepartmentDTO.class))
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
      * Find All Departments
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findAll(ServerRequest request) {
@@ -53,48 +76,80 @@ public class DepartmentHandler {
 
     /**
      * Find Department by ID
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findById(ServerRequest request) {
+        var id = request.pathVariable("id");
         return service
-                .findById(Long.valueOf(request.pathVariable("id")))
+                .findById(id)
                 .flatMap(departmentDTO -> ok()
                         .contentType(APPLICATION_JSON)
                         .body(departmentDTO, DepartmentDTO.class)
                 )
-                .switchIfEmpty(notFound().build());
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
      * Find Departments by Location ID
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findByLocationId(ServerRequest request) {
+        var locationId = request.pathVariable("locationId");
         return ServerResponse
                 .ok()
                 .contentType(APPLICATION_JSON)
-                .body(service.findByLocationId(Long.valueOf(request.pathVariable("locationId"))),
-                        DepartmentDTO.class);
+                .body(service.findByLocationId(locationId),
+                        DepartmentDTO.class)
+                .onErrorResume(e -> error(new ResourceNotFoundException(locationId)));
     }
 
     /**
      * Find Department by Manager ID
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findByManagerId(ServerRequest request) {
+        var managerId = request.pathVariable("managerId");
         return ServerResponse
                 .ok()
                 .contentType(APPLICATION_JSON)
-                .body(service.findByManagerId(Long.valueOf(request.pathVariable("managerId"))),
-                        DepartmentDTO.class);
+                .body(service.findByManagerId(managerId), DepartmentDTO.class)
+                .onErrorResume(e -> error(new ResourceNotFoundException(managerId)));
+    }
+    /**
+     * Search Departments by Name
+     *
+     * @param request ServerRequest
+     *
+     * @return Mono ServerResponse
+     */
+    public Mono<ServerResponse> search(ServerRequest request) {
+        return request.queryParam("name")
+                .map(name -> ServerResponse
+                        .ok()
+                        .contentType(APPLICATION_JSON)
+                        .body(service
+                                .fetchByName(name)
+                                .flatMap(department -> zip(interval(ofSeconds(2)),
+                                        fromStream(generate(() -> department)))
+                                        .map(Tuple2::getT2)
+                                ), DepartmentDTO.class))
+                .orElseGet(() -> error(new ResourceNotFoundException()));
     }
 
     /**
      * Stream all Departments
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> stream(ServerRequest request) {
@@ -102,64 +157,25 @@ public class DepartmentHandler {
                 .ok()
                 .contentType(APPLICATION_JSON)
                 .body(service.findAll()
-                        .flatMap(department -> zip(interval(ofSeconds(2)),fromStream(generate(() -> department)))
-                .map(Tuple2::getT2)), DepartmentDTO.class);
-    }
-
-    /**
-     * Search Departments by Name
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> search(ServerRequest request) {
-        return request.queryParam("name")
-                .map(name -> ServerResponse
-                .ok()
-                .contentType(APPLICATION_JSON)
-                .body(service
-                        .fetchByName(name)
-                        .flatMap(department -> zip(interval(ofSeconds(2)),
-                                fromStream(generate(() -> department)))
-                                .map(Tuple2::getT2)
-                        ),  DepartmentDTO.class)).orElseGet(() -> ServerResponse.notFound().build());
-    }
-
-    /**
-     * Create Department
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> create(ServerRequest request) {
-        return request
-                .bodyToMono(DepartmentDTO.class)
-                .flatMap(department -> ServerResponse
-                        .status(CREATED)
-                        .contentType(APPLICATION_JSON)
-                        .body(service.create(department),DepartmentDTO.class));
+                        .flatMap(department -> zip(interval(ofSeconds(2)), fromStream(generate(() -> department)))
+                                .map(Tuple2::getT2)), DepartmentDTO.class);
     }
 
     /**
      * Update Department by ID
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> updateById(ServerRequest request) {
         return request.bodyToMono(DepartmentDTO.class)
                 .flatMap(department -> ok()
                         .contentType(APPLICATION_JSON)
-                        .body(service.update(Long.valueOf(request.pathVariable("id")), department),
+                        .body(service.updateById(request.pathVariable("id"), department),
                                 DepartmentDTO.class)
-                );
+                )
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
     }
 
-    /**
-     * Delete Department by ID
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> deleteById(ServerRequest request){
-        return service.deleteById(Long.valueOf(request.pathVariable("id")))
-                .flatMap(departmentDTO -> ok().body(departmentDTO, DepartmentDTO.class))
-                .switchIfEmpty(notFound().build());
-    }
 }

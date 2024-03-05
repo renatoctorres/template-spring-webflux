@@ -7,10 +7,10 @@ import reactor.core.publisher.Mono;
 public interface CityService {
     Mono<CityDTO> create(CityDTO dto);
     Flux<CityDTO> findAll();
-    Mono<CityDTO> findById(Long id);
-    Flux<CityDTO> findByStateId(Long stateId);
-    Mono<CityDTO> update(Long id, CityDTO dto);
-    Mono<CityDTO> deleteById(Long id);
+    Mono<CityDTO> findById(String id);
+    Flux<CityDTO> findByStateId(String stateId);
+    Mono<CityDTO> updateById(String id, CityDTO dto);
+    Mono<CityDTO> deleteById(String id);
     Flux<CityDTO> fetchByName(String name);
 
 }

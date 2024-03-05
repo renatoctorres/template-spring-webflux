@@ -9,18 +9,18 @@ import reactor.core.publisher.Flux;
  * Department Repository - ReactiveMongoDBRepository Implementation
  */
 @Repository
-public interface DepartmentRepository extends ReactiveMongoRepository<Department, Long> {
+public interface DepartmentRepository extends ReactiveMongoRepository<Department, String> {
     /**
      * Find All Departments by Manager ID
-     * @param managerId Long
+     * @param managerId String
      * @return Flux Department
      */
-    Flux<Department> findByManagerId(Long managerId);
+    Flux<Department> findByManagerId(String managerId);
 
     /**
      * Find All Departments by Location ID
-     * @param locationId Long
+     * @param locationId String
      * @return Flux Department
      */
-    Flux<Department> findByLocationId(Long locationId);
+    Flux<Department> findByLocationId(String locationId);
 }

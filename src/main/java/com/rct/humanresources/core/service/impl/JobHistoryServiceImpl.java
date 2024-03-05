@@ -1,47 +1,28 @@
 package com.rct.humanresources.core.service.impl;
 
-import com.rct.humanresources.core.mapper.JobHistoryMapper;
 import com.rct.humanresources.core.model.dto.JobHistoryDTO;
+import com.rct.humanresources.core.model.mapper.JobHistoryMapper;
 import com.rct.humanresources.core.service.JobHistoryService;
-import com.rct.humanresources.infra.persistence.model.JobHistory;
 import com.rct.humanresources.infra.persistence.repository.JobHistoryRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import static java.util.Collections.singletonList;
-import static org.springframework.data.domain.Sort.Order.asc;
+import static reactor.core.publisher.Mono.empty;
 
 /**
  * JobHistory Service Implementation
  */
 @Service
 @Slf4j
-@Transactional
+@RequiredArgsConstructor
 public class JobHistoryServiceImpl implements JobHistoryService {
-    ReactiveMongoTemplate reactiveMongoTemplate;
-    JobHistoryMapper mapper;
-    JobHistoryRepository repository;
-
-    /**
-     * JobHistory Service Implementation - Constructor
-     * @param reactiveMongoTemplate ReactiveMongoTemplate
-     * @param repository JobHistoryRepository
-     */
-    @Autowired
-    public JobHistoryServiceImpl(ReactiveMongoTemplate reactiveMongoTemplate, JobHistoryMapper mapper,
-                                 JobHistoryRepository repository) {
-        this.mapper = mapper;
-        this.reactiveMongoTemplate = reactiveMongoTemplate;
-        this.repository = repository;
-    }
+    private final ReactiveMongoTemplate reactiveMongoTemplate;
+    private final JobHistoryMapper mapper;
+    private final JobHistoryRepository repository;
 
     /**
      * Create JobHistory
@@ -66,10 +47,10 @@ public class JobHistoryServiceImpl implements JobHistoryService {
 
     /**
      * Find All JobHistories by Department ID
-     * @param departmentId Long
+     * @param departmentId String
      * @return Flux JobHistoryDTO
      */
-    public Flux<JobHistoryDTO> findByDepartmentId(Long departmentId){
+    public Flux<JobHistoryDTO> findByDepartmentId(String departmentId){
         return repository
                 .findByDepartmentId(departmentId)
                 .map(mapper::fromModel);
@@ -77,10 +58,10 @@ public class JobHistoryServiceImpl implements JobHistoryService {
 
     /**
      * Find All JobHistories by job ID
-     * @param jobId Long
+     * @param jobId String
      * @return Flux JobHistoryDTO
      */
-    public Flux<JobHistoryDTO> findByJobId(Long jobId){
+    public Flux<JobHistoryDTO> findByJobId(String jobId){
         return repository
                 .findByJobId(jobId)
                 .map(mapper::fromModel);
@@ -88,10 +69,10 @@ public class JobHistoryServiceImpl implements JobHistoryService {
 
     /**
      * Find JobHistory by ID
-     * @param id Long
+     * @param id String
      * @return Mono JobHistoryDTO
      */
-    public Mono<JobHistoryDTO> findById(Long id){
+    public Mono<JobHistoryDTO> findById(String id){
         return repository
                 .findById(id)
                 .map(mapper::fromModel);
@@ -99,42 +80,30 @@ public class JobHistoryServiceImpl implements JobHistoryService {
 
     /**
      * Update JobHistory by ID
-     * @param id Long
+     * @param id String
      * @param dto JobHistoryDTO
      * @return Mono JobHistoryDTO
      */
-    public Mono<JobHistoryDTO> update(Long id, JobHistoryDTO dto){
+    public Mono<JobHistoryDTO> updateById(String id, JobHistoryDTO dto){
         return repository
-                .save(mapper.fromDTO(dto))
+                .findById(id)
+                .flatMap(item ->
+                        repository.save(mapper.fromDTO(dto))
+                )
+                .switchIfEmpty(empty())
                 .map(mapper::fromModel);
     }
 
     /**
      * Delete JobHistory by ID
-     * @param id Long
+     * @param id String
      * @return Mono JobHistoryDTO
      */
-    public Mono<JobHistoryDTO> deleteById(Long id){
+    public Mono<JobHistoryDTO> deleteById(String id){
         return repository.findById(id)
                 .flatMap(item -> repository.delete(item).then(Mono.just(item)))
                 .map(mapper::fromModel);
     }
 
-    /**
-     * Fetch JobHistories by Name
-     * @param name String
-     * @return Flux JobHistoryDTO
-     */
-    public Flux<JobHistoryDTO> fetchByName(String name) {
-        var query = new Query().with(Sort.by(singletonList(asc("name"))));
-
-        query.addCriteria(Criteria
-                .where("name")
-                .regex(name)
-        );
-        return reactiveMongoTemplate
-                .find(query, JobHistory.class)
-                .map(mapper::fromModel);
-    }
 
 }

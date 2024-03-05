@@ -1,9 +1,10 @@
 package com.rct.humanresources.infra.handler;
 
-import com.rct.humanresources.core.mapper.JobMapper;
 import com.rct.humanresources.core.model.dto.JobDTO;
 import com.rct.humanresources.core.service.JobService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.rct.humanresources.infra.config.exception.ResourceBadRequestException;
+import com.rct.humanresources.infra.config.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -14,35 +15,56 @@ import static java.time.Duration.ofSeconds;
 import static java.util.stream.Stream.generate;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.web.reactive.function.server.ServerResponse.notFound;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 import static reactor.core.publisher.Flux.fromStream;
-import static reactor.core.publisher.Flux.zip;
 import static reactor.core.publisher.Flux.interval;
+import static reactor.core.publisher.Flux.zip;
+import static reactor.core.publisher.Mono.error;
 
 
 /**
  * JobHandler - WebFlux Handler
  */
 @Component
+@RequiredArgsConstructor
 public class JobHandler {
-    JobService service;
-    JobMapper mapper;
+    private final JobService service;
 
     /**
-     * Job Handler - Constructor
-     * @param service JobService
-     * @param mapper JobMapper
+     * Create Job
+     *
+     * @param request ServerRequest
+     *
+     * @return Mono ServerResponse
      */
-    @Autowired
-    public JobHandler(JobService service, JobMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
+    public Mono<ServerResponse> create(ServerRequest request) {
+        return request.bodyToMono(JobDTO.class)
+                .flatMap(job -> ServerResponse
+                        .status(CREATED)
+                        .contentType(APPLICATION_JSON)
+                        .body(service.create(job), JobDTO.class))
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
+    }
+
+    /**
+     * Delete Job by ID
+     *
+     * @param request ServerRequest
+     *
+     * @return Mono ServerResponse
+     */
+    public Mono<ServerResponse> deleteById(ServerRequest request) {
+        var id = request.pathVariable("id");
+        return service.deleteById(id)
+                .flatMap(jobDTO -> ok().body(jobDTO, JobDTO.class))
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
      * Find All Jobs
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findAll(ServerRequest request) {
@@ -54,22 +76,27 @@ public class JobHandler {
 
     /**
      * Find Job by ID
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findById(ServerRequest request) {
+        var id = request.pathVariable("id");
         return service
-                .findById(Long.valueOf(request.pathVariable("id")))
+                .findById(id)
                 .flatMap(jobDTO -> ok()
                         .contentType(APPLICATION_JSON)
                         .body(jobDTO, JobDTO.class)
                 )
-                .switchIfEmpty(notFound().build());
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
      * Search Jobs by Name
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> search(ServerRequest request) {
@@ -78,13 +105,15 @@ public class JobHandler {
                         .ok()
                         .contentType(APPLICATION_JSON)
                         .body(service.fetchByName(title),
-                                JobDTO.class)).orElseGet(() -> ServerResponse
-                        .notFound().build());
+                                JobDTO.class))
+                .orElseGet(() -> error(new ResourceNotFoundException()));
     }
 
     /**
      * Stream all Jobs
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> stream(ServerRequest request) {
@@ -99,40 +128,19 @@ public class JobHandler {
     }
 
     /**
-     * Create Job
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> create(ServerRequest request) {
-        return request.bodyToMono(JobDTO.class)
-                .flatMap(job -> ServerResponse
-                        .status(CREATED)
-                        .contentType(APPLICATION_JSON)
-                        .body(service.create(job), JobDTO.class));
-    }
-
-    /**
      * Update Job by ID
+     *
      * @param request ServerRequest
+     *
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> updateById(ServerRequest request) {
         return request.bodyToMono(JobDTO.class)
                 .flatMap(job -> ok()
                         .contentType(APPLICATION_JSON)
-                        .body(service.update(Long.valueOf(request.pathVariable("id")), job),
-                                JobDTO.class)
-                );
+                        .body(service.updateById(request.pathVariable("id"), job),
+                                JobDTO.class))
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
     }
 
-    /**
-     * Delete Job by ID
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> deleteById(ServerRequest request){
-        return service.deleteById(Long.valueOf(request.pathVariable("id")))
-                .flatMap(jobDTO -> ok().body(jobDTO, JobDTO.class))
-                .switchIfEmpty(notFound().build());
-    }
 }

@@ -4,7 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -14,14 +16,18 @@ import java.time.LocalDateTime;
  */
 @Getter
 @Setter
-@Document(collection = "jobs")
+@Document(collection = "job-histories")
 @AllArgsConstructor
 @NoArgsConstructor
 public class JobHistory {
     @Id
-    private Long id;
+    private String id;
+    private String departmentId;
+    private String jobId;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private Long jobId;
-    private Long departmentId;
+    @CreatedDate
+    private LocalDateTime createdAt;
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
 }

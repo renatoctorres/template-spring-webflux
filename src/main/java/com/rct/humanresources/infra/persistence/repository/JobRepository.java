@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository;
  * Job Repository - ReactiveMongoDBRepository Implementation
  */
 @Repository
-public interface JobRepository extends ReactiveMongoRepository<Job, Long> {
+public interface JobRepository extends ReactiveMongoRepository<Job, String> {
 }

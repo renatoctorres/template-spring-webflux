@@ -1,9 +1,10 @@
 package com.rct.humanresources.infra.handler;
 
-import com.rct.humanresources.core.mapper.LocationMapper;
 import com.rct.humanresources.core.model.dto.LocationDTO;
 import com.rct.humanresources.core.service.LocationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.rct.humanresources.infra.config.exception.ResourceBadRequestException;
+import com.rct.humanresources.infra.config.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -14,29 +15,44 @@ import static java.time.Duration.ofSeconds;
 import static java.util.stream.Stream.generate;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.web.reactive.function.server.ServerResponse.notFound;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 import static reactor.core.publisher.Flux.fromStream;
-import static reactor.core.publisher.Flux.zip;
 import static reactor.core.publisher.Flux.interval;
+import static reactor.core.publisher.Flux.zip;
+import static reactor.core.publisher.Mono.error;
 
 /**
  * LocationHandler - WebFlux Handler
  */
 @Component
+@RequiredArgsConstructor
 public class LocationHandler {
-    LocationService service;
-    LocationMapper mapper;
+    private final LocationService service;
 
     /**
-     * Location Handler - Constructor
-     * @param service DepartmentService
-     * @param mapper DepartmentMapper
+     * Create Location
+     * @param request ServerRequest
+     * @return Mono ServerResponse
      */
-    @Autowired
-    public LocationHandler(LocationService service, LocationMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
+    public Mono<ServerResponse> create(ServerRequest request) {
+        return request.bodyToMono(LocationDTO.class)
+                .flatMap(location -> ServerResponse
+                        .status(CREATED)
+                        .contentType(APPLICATION_JSON)
+                        .body(service.create(location), LocationDTO.class))
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
+    }
+
+    /**
+     * Delete Location by ID
+     * @param request ServerRequest
+     * @return Mono ServerResponse
+     */
+    public Mono<ServerResponse> deleteById(ServerRequest request){
+        var id = request.pathVariable("id");
+        return service.deleteById(id)
+                .flatMap(locationDTO -> ok().body(locationDTO, LocationDTO.class))
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
@@ -52,18 +68,33 @@ public class LocationHandler {
     }
 
     /**
+     * Find Location by City ID
+     * @param request ServerRequest
+     * @return Mono ServerResponse
+     */
+    public Mono<ServerResponse> findByCityId(ServerRequest request) {
+        var cityId = request.pathVariable("cityId");
+        return ServerResponse
+                .ok()
+                .contentType(APPLICATION_JSON)
+                .body(service.findByCityId(cityId), LocationDTO.class)
+                .onErrorResume(e -> error(new ResourceNotFoundException(cityId)));
+    }
+
+    /**
      * Find Location by ID
      * @param request ServerRequest
      * @return Mono ServerResponse
      */
     public Mono<ServerResponse> findById(ServerRequest request) {
+        var id = request.pathVariable("id");
         return service
-                .findById(Long.valueOf(request.pathVariable("id")))
+                .findById(id)
                 .flatMap(locationDTO -> ok()
                         .contentType(APPLICATION_JSON)
                         .body(locationDTO, LocationDTO.class)
                 )
-                .switchIfEmpty(notFound().build());
+                .onErrorResume(e -> error(new ResourceNotFoundException(id)));
     }
 
     /**
@@ -76,8 +107,8 @@ public class LocationHandler {
                 .map(name -> ServerResponse
                         .ok()
                         .contentType(APPLICATION_JSON)
-                        .body(service.fetchByName(name), LocationDTO.class)).orElseGet(() -> ServerResponse
-                        .notFound().build());
+                        .body(service.fetchByName(name), LocationDTO.class))
+                .orElseGet(() -> error(new ResourceNotFoundException()));
 
     }
     /**
@@ -92,22 +123,7 @@ public class LocationHandler {
                 .body(service.findAll()
                         .flatMap(location -> zip(interval(ofSeconds(2)),
                                 fromStream(generate(() -> location)))
-                                .map(Tuple2::getT2)
-                        ), LocationDTO.class);
-    }
-
-    /**
-     * Create Location
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> create(ServerRequest request) {
-        return request.bodyToMono(LocationDTO.class)
-                .flatMap(location -> ServerResponse
-                        .status(CREATED)
-                        .contentType(APPLICATION_JSON)
-                        .body(service.create(location),
-                                LocationDTO.class));
+                                .map(Tuple2::getT2)), LocationDTO.class);
     }
 
     /**
@@ -119,19 +135,9 @@ public class LocationHandler {
         return request.bodyToMono(LocationDTO.class)
                 .flatMap(location -> ok()
                         .contentType(APPLICATION_JSON)
-                        .body(service.update(Long.valueOf(request.pathVariable("id")), location),
-                                LocationDTO.class)
-                );
+                        .body(service.updateById(request.pathVariable("id"), location),
+                                LocationDTO.class))
+                .onErrorResume(e -> error(new ResourceBadRequestException(e.getMessage())));
     }
 
-    /**
-     * Delete Location by ID
-     * @param request ServerRequest
-     * @return Mono ServerResponse
-     */
-    public Mono<ServerResponse> deleteById(ServerRequest request){
-        return service.deleteById(Long.valueOf(request.pathVariable("id")))
-                .flatMap(locationDTO -> ok().body(locationDTO, LocationDTO.class))
-                .switchIfEmpty(notFound().build());
-    }
 }

@@ -9,11 +9,11 @@ import reactor.core.publisher.Flux;
  * City Repository - ReactiveMongoDBRepository Implementation
  */
 @Repository
-public interface CityRepository extends ReactiveMongoRepository<City, Long>{
+public interface CityRepository extends ReactiveMongoRepository<City, String>{
     /**
      * Find All Cities by State ID
-     * @param stateId Long
-     * @return Flux Employer
+     * @param stateId String
+     * @return Flux Employee
      */
-    Flux<City> findByStateId(Long stateId);
+    Flux<City> findByStateId(String stateId);
 }

@@ -15,4 +15,6 @@ public class JobDTO {
     String title;
     double minSalary;
     double maxSalary;
+    String createdAt;
+    String updatedAt;
 }

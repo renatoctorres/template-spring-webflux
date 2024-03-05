@@ -8,6 +8,8 @@ public class CityDTOStub {
         city.setId("1");
         city.setName("City Name");
         city.setStateId("2");
+        city.setCreatedAt("01/01/2010");
+        city.setUpdatedAt("01/01/2011");
         return city;
     }
 }

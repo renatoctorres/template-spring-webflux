@@ -1,6 +1,7 @@
 package com.rct.humanresources.infra.client;
 
-import com.rct.humanresources.infra.persistence.model.Employer;
+import com.rct.humanresources.infra.persistence.model.Employee;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,19 +17,9 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class WebClientUtil {
-
     private final WebClient webClient;
-
-    /**
-     * WebClient Constructor
-     * @param webClient WebClient
-     */
-    @Autowired
-    public WebClientUtil(WebClient webClient) {
-        this.webClient = webClient;
-    }
-
     /**
      * Get Fake Users
      * @return ResponseSpec
@@ -41,23 +32,23 @@ public class WebClientUtil {
     }
 
     /**
-     * Post Employer
-     * @param employer Employer
+     * Post Employee
+     * @param employee Employee
      * @return Mono User
      */
-    public Mono<Employer> postEmployer(Employer employer) {
+    public Mono<Employee> postEmployee(Employee employee) {
         return webClient
                 .post()
-                .uri("http://localhost:9000/api/employers")
+                .uri("http://localhost:8080/employees")
                 .header("Authorization", "Basic MY_PASSWORD")
                 .accept(APPLICATION_JSON)
-                .body(Mono.just(employer), Employer.class)
+                .body(Mono.just(employee), Employee.class)
                 .retrieve()
-                .bodyToMono(Employer.class)
+                .bodyToMono(Employee.class)
                 .log()
                 .retryWhen(Retry.backoff(10, ofSeconds(2)))
-                .onErrorReturn(new Employer())
-                .doOnError(throwable -> log.error("Result error out for POST employer", throwable))
-                .doFinally(signalType -> log.info("Result Completed for POST Employer: {}", signalType));
+                .onErrorReturn(new Employee())
+                .doOnError(throwable -> log.error("Result error out for POST employee", throwable))
+                .doFinally(signalType -> log.info("Result Completed for POST Employee: {}", signalType));
     }
 }

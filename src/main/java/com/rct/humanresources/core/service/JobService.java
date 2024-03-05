@@ -6,9 +6,9 @@ import reactor.core.publisher.Mono;
 
 public interface JobService {
     Flux<JobDTO> findAll();
-    Mono<JobDTO> findById(Long id);
-    Mono<JobDTO> update(Long id, JobDTO dto);
-    Mono<JobDTO> deleteById(Long id);
+    Mono<JobDTO> findById(String id);
+    Mono<JobDTO> updateById(String id, JobDTO dto);
+    Mono<JobDTO> deleteById(String id);
     Flux<JobDTO> fetchByName(String name);
     Mono<JobDTO> create(JobDTO dto);
 }

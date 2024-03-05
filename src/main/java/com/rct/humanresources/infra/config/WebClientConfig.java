@@ -32,7 +32,7 @@ public class WebClientConfig {
         final long TIMEOUT = 120L;
         final long FACTOR = 1000L;
 
-        // Define SSLContext in order to connect to secure REST API network
+        // Define SSLContext in order to connect to secure APIs network
         var sslContext = SslContextBuilder
                 .forClient()
                 .trustManager(INSTANCE)
